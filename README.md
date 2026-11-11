@@ -21,7 +21,7 @@ Hourly options-chain anomaly monitor with Telegram alerts.
 5. Run: `python -m src.main`.
 
 ## GitHub Actions secrets
-Add repository secrets `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID`. Enable Actions and run **Hourly Options Scan** manually. The schedule is hourly in a UTC window that covers the New York regular trading session across daylight-saving changes; exchange holidays and times outside 09:30-16:00 New York time are skipped.
+In **Settings → Secrets and variables → Actions → Repository secrets**, add `TELEGRAM_BOT_TOKEN` (the token issued by BotFather) and `TELEGRAM_CHAT_ID` (the destination chat ID). Use repository secrets, not Environment secrets, unless the workflow is explicitly assigned to that environment. If either secret is missing, the scanner will still run and write alert details to the Actions log, but it will not send Telegram messages. Enable Actions and run **Hourly Options Scan** manually. The schedule is hourly in a UTC window that covers the New York regular trading session across daylight-saving changes; exchange holidays and times outside 09:30-16:00 New York time are skipped.
 
 ## Environment
 `WATCHLIST` (default SPY,QQQ,IWM,AAPL,MSFT,NVDA,TSLA), `MAX_EXPIRATIONS` (4), `MIN_VOLUME` (100), `ALERT_SCORE` (65), `DATABASE_PATH` (data/options.db), `DRY_RUN` (1).
