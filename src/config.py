@@ -18,7 +18,9 @@ _FILE_CONFIG = _read_config()
 
 def csv_list(name: str, default_items) -> list[str]:
     default = ",".join(default_items) if not isinstance(default_items, str) else default_items
-    raw = os.getenv(name, default)
+    raw = os.getenv(name)
+    if raw is None or not raw.strip():
+        raw = default
     return list(dict.fromkeys(item.strip().upper() for item in raw.split(",") if item.strip()))
 
 WATCHLIST = csv_list("WATCHLIST", _FILE_CONFIG.get("watchlist", ["SPY","QQQ","IWM","AAPL","MSFT","NVDA","TSLA"]))
