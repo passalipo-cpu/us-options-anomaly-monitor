@@ -21,14 +21,14 @@ Hourly options-chain anomaly monitor with Telegram alerts.
 5. Run: `python -m src.main`.
 
 ## GitHub Actions secrets
-Add repository secrets `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID`. Enable Actions and run **Hourly Options Scan** manually. Scheduled runs are hourly on weekdays in a broad UTC window; Python filters the New York regular session and exchange holidays.
+Add repository secrets `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID`. Enable Actions and run **Hourly Options Scan** manually. The schedule is hourly in a UTC window that covers the New York regular trading session across daylight-saving changes; exchange holidays and times outside 09:30-16:00 New York time are skipped.
 
 ## Environment
 `WATCHLIST` (default SPY,QQQ,IWM,AAPL,MSFT,NVDA,TSLA), `MAX_EXPIRATIONS` (4), `MIN_VOLUME` (100), `ALERT_SCORE` (65), `DATABASE_PATH` (data/options.db), `DRY_RUN` (1).
 
 ## Interpretation and limitations
 - Open interest normally updates daily, not hourly.
-- Yahoo volume is generally cumulative for the session; the monitor compares snapshots and handles lower/reset volume conservatively.
+- Yahoo volume is generally cumulative within the trading session; comparisons are reset at the New York trading-day boundary.
 - Volume/OI is a screening metric, not evidence that trades opened new positions.
 - Sweep/aggressor detection requires trade-level prints and reliable bid/ask classification.
 - GitHub runners are ephemeral. SQLite Actions cache is best-effort, not durable transactional storage. Use managed PostgreSQL or a persistent host for production history.
