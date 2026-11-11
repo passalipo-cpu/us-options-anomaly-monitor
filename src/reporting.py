@@ -107,3 +107,53 @@ def write_reports(summary, alerts, report_dir, max_email_alerts=30):
     return {"csv": str(csv_path), "html": str(html_path), "text": str(txt_path),
             "email_html": html_body, "email_text": "\n".join(summary_text),
             "email_alerts_included": len(top)}
+
+
+def append_github_step_summary(summary, alerts, reports, max_items=15):
+    """Add a readable summary and expandable detailed signals to the GitHub Actions run Summary tab."""
+    summary_path = os.getenv("GITHUB_STEP_SUMMARY")
+    if not summary_path:
+        return False
+    top = sorted(alerts, key=lambda x: x["score_data"]["score"], reverse=True)[:max_items]
+    lines = [
+        "# US Options Anomaly Monitor",
+        "",
+        f"**Sesja NY:** {summary['session_day']}  ",
+        f"**Watchlista:** {summary['requested_tickers']} | **Pobrano łańcuch:** {summary['scanned_tickers']} | **Bez danych:** {summary['no_data_count']} | **Błędy:** {summary['failed_count']}  ",
+        f"**Kontrakty odebrane:** {summary['contracts_received']} | **Kontrakty z wolumenem powyżej progu:** {summary['contracts_above_min_volume']} | **Alerty:** {summary['alerts_found']} (próg {summary['alert_threshold']}/100)",
+        "",
+        f"**Raporty:** `{reports['csv']}` · `{reports['html']}` · `{reports['text']}`",
+        "",
+        "## Najsilniejsze sygnały",
+        "",
+        "| Ticker | Kontrakt | Score | Wiarygodność | Wolumen | OI | Volume/OI |",
+        "|---|---|---:|---|---:|---:|---:|"
+    ]
+    for item in top:
+        d = item["data"]
+        s = item["score_data"]
+        cells = [str(d.get("ticker","")), str(d.get("contract_symbol","")),
+                 str(s.get("score","")), str(s.get("confidence","")),
+                 f"{d.get('volume',0):,}", f"{d.get('open_interest',0):,}",
+                 f"{s.get('volume_oi'):.2f}x" if s.get("volume_oi") is not None else "—"]
+        lines.append("| " + " | ".join(x.replace("|", " ") for x in cells) + " |")
+    lines += ["", "## Szczegółowe objaśnienia – top sygnały", ""]
+    for item in top:
+        d = item["data"]
+        s = item["score_data"]
+        title = f"{d.get('ticker')} {d.get('option_type')} – {d.get('contract_symbol')} – {s.get('score')}/100 – wiarygodność: {s.get('confidence')}"
+        lines.append("<details><summary>" + html.escape(title) + "</summary>")
+        lines.append("")
+        lines.append("```text")
+        lines.append(item["explanation"])
+        lines.append("```")
+        lines.append("")
+        lines.append("</details>")
+        lines.append("")
+    lines += [
+        "> **Ograniczenia:** Score jest heurystyczny; Volume/OI nie potwierdza nowych pozycji; CALL/PUT nie wskazuje strony inicjującej; premium to estymacja na bazie ostatniej ceny. Źródło Yahoo Finance/yfinance nie zapewnia pełnego rynku ani gwarantowanego czasu rzeczywistego.",
+        ""
+    ]
+    with open(summary_path, "a", encoding="utf-8") as handle:
+        handle.write("\n".join(lines))
+    return True
