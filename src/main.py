@@ -4,7 +4,7 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 from .config import WATCHLIST,MAX_EXPIRATIONS,MIN_VOLUME,ALERT_SCORE,DATABASE_PATH,DRY_RUN,TELEGRAM_BOT_TOKEN,TELEGRAM_CHAT_ID
 from .providers.yahoo import fetch_chain
-from .storage import connect,previous_snapshot,save_snapshot
+from .storage import connect,previous_snapshot,save_snapshot,alert_already_sent,record_alert_sent
 from .scoring import score_contract
 from .telegram import send_message
 from .market_hours import is_us_regular_session
@@ -44,7 +44,7 @@ def run():
                 symbol=str(row.get("contractSymbol") or "")
                 previous=previous_snapshot(db,symbol,session_day) if symbol and symbol!="nan" else None
                 result=score_contract(row,previous)
-                if result["score"]>=ALERT_SCORE:
+                if result["score"]>=ALERT_SCORE and symbol and not alert_already_sent(db,symbol,session_day):
                     alerts.append((row,result))
             # Persist after scoring: comparisons use the preceding snapshot from this session only.
             save_snapshot(db,frame)
@@ -60,6 +60,7 @@ def run():
                     log.info("DRY RUN ALERT\n%s",msg)
                 else:
                     send_message(TELEGRAM_BOT_TOKEN,TELEGRAM_CHAT_ID,msg)
+                    record_alert_sent(db,str(row.get("contractSymbol")),session_day,result["score"])
     finally:
         db.close()
 
