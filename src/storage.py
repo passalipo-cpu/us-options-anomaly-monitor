@@ -15,6 +15,9 @@ def connect(path: str):
       contract_symbol TEXT NOT NULL, option_type TEXT, expiry TEXT, strike REAL, volume INTEGER,
       open_interest INTEGER, last_price REAL, bid REAL, ask REAL, implied_volatility REAL)""")
     db.execute("CREATE INDEX IF NOT EXISTS idx_contract_time ON snapshots(contract_symbol,captured_at)")
+    db.execute("""CREATE TABLE IF NOT EXISTS sent_alerts (
+      session_day TEXT NOT NULL, contract_symbol TEXT NOT NULL, sent_at TEXT NOT NULL,
+      score REAL NOT NULL, PRIMARY KEY(session_day,contract_symbol))""")
     db.commit()
     return db
 
@@ -56,3 +59,19 @@ def save_snapshot(db, frame):
           (captured_at,ticker,contract_symbol,option_type,expiry,strike,volume,open_interest,last_price,bid,ask,implied_volatility)
           VALUES (?,?,?,?,?,?,?,?,?,?,?,?)""", rows)
         db.commit()
+
+
+def alert_already_sent(db, symbol: str, session_day: str) -> bool:
+    row = db.execute(
+        "SELECT 1 FROM sent_alerts WHERE session_day=? AND contract_symbol=? LIMIT 1",
+        (session_day, symbol)
+    ).fetchone()
+    return row is not None
+
+def record_alert_sent(db, symbol: str, session_day: str, score: float) -> None:
+    from datetime import datetime, timezone
+    db.execute(
+        "INSERT OR IGNORE INTO sent_alerts(session_day,contract_symbol,sent_at,score) VALUES (?,?,?,?)",
+        (session_day, symbol, datetime.now(timezone.utc).isoformat(), float(score))
+    )
+    db.commit()
