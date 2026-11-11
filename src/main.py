@@ -28,6 +28,12 @@ def run():
         log.info("Outside US regular session; skipping scan.")
         return
     session_day=datetime.now(NY).date().isoformat()
+    telegram_configured = bool(TELEGRAM_BOT_TOKEN.strip() and TELEGRAM_CHAT_ID.strip())
+    if not telegram_configured:
+        log.warning(
+            "Telegram is not configured: TELEGRAM_BOT_TOKEN and/or TELEGRAM_CHAT_ID is missing. "
+            "Alerts will be written to the Actions log only. Add both as repository Actions secrets."
+        )
     db=connect(DATABASE_PATH)
     try:
         for ticker in WATCHLIST:
@@ -56,8 +62,8 @@ def run():
                      f"Last: ${safe_number(row.get('lastPrice')):.2f} | Est. premium: ${result['premium']:,.0f}\n"
                      f"Reasons: {', '.join(result['reasons'])}\n"
                      "Screening signal only; not proof of opening flow.")
-                if DRY_RUN:
-                    log.info("DRY RUN ALERT\n%s",msg)
+                if DRY_RUN or not telegram_configured:
+                    log.info("ALERT NOT SENT (DRY_RUN or Telegram not configured)\n%s",msg)
                 else:
                     send_message(TELEGRAM_BOT_TOKEN,TELEGRAM_CHAT_ID,msg)
                     record_alert_sent(db,str(row.get("contractSymbol")),session_day,result["score"])
