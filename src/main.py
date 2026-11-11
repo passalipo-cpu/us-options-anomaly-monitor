@@ -183,30 +183,37 @@ def run():
         log.warning("Telegram secrets missing: add TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID.")
     else:
         sent = 0
+        skipped_duplicate = 0
         alert_db = connect(DATABASE_PATH)
         try:
-          for item in alerts[:MAX_TELEGRAM_ALERTS]:
-            d = item["data"]
-            s = item["score_data"]
-            msg = (
-                f"OPTIONS ANOMALY | {d['ticker']} {d['option_type']}\n"
-                f"Contract: {d['contract_symbol']} | Expiry: {d['expiry']} | Strike: {d['strike']}\n"
-                f"Score: {s['score']:.0f}/100 – {s['band']}\n"
-                f"Data confidence: {s['confidence']} | Volume/OI: {s['volume_oi']}x\n"
-                f"Volume: {d['volume']:,} | OI: {d['open_interest']:,}\n"
-                f"Indicative premium: USD {s['premium']:,.0f}\n"
-                f"Main factors: {', '.join(s['reasons'][:4])}\n"
-                "Full explanation and CSV are in the emailed/Actions report. Not proof of opening flow."
-            )
-            try:
-                send_message(TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, msg)
-                record_alert_sent(alert_db, d["contract_symbol"], session_day, s["score"])
-                sent += 1
-            except Exception:
-                log.exception("Telegram send failed for %s", d["contract_symbol"])
+            for item in alerts:
+                if sent >= MAX_TELEGRAM_ALERTS:
+                    break
+                d = item["data"]
+                s = item["score_data"]
+                if alert_already_sent(alert_db, d["contract_symbol"], session_day):
+                    skipped_duplicate += 1
+                    continue
+                msg = (
+                    f"OPTIONS ANOMALY | {d['ticker']} {d['option_type']}\n"
+                    f"Contract: {d['contract_symbol']} | Expiry: {d['expiry']} | Strike: {d['strike']}\n"
+                    f"Score: {s['score']:.0f}/100 – {s['band']}\n"
+                    f"Data confidence: {s['confidence']} | Volume/OI: {s['volume_oi']}x\n"
+                    f"Volume: {d['volume']:,} | OI: {d['open_interest']:,}\n"
+                    f"Indicative premium: USD {s['premium']:,.0f}\n"
+                    f"Main factors: {', '.join(s['reasons'][:4])}\n"
+                    "Full explanation and CSV are in the emailed/Actions report. Not proof of opening flow."
+                )
+                try:
+                    send_message(TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, msg)
+                    record_alert_sent(alert_db, d["contract_symbol"], session_day, s["score"])
+                    sent += 1
+                except Exception:
+                    log.exception("Telegram send failed for %s", d["contract_symbol"])
         finally:
             alert_db.close()
-        log.info("Telegram alerts sent: %s (limit %s).", sent, MAX_TELEGRAM_ALERTS)
+        log.info("Telegram alerts sent: %s (limit %s); duplicates skipped: %s.",
+                 sent, MAX_TELEGRAM_ALERTS, skipped_duplicate)
 
     if email_configured:
         subject = f"[US Options Monitor] {len(alerts)} alerts | {session_day} | {finished.strftime('%H:%M UTC')}"
