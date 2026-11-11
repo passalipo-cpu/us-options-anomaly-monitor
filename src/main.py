@@ -16,7 +16,7 @@ from .storage import connect, previous_snapshot, save_snapshot, alert_already_se
 from .scoring import score_contract, explain_contract
 from .telegram import send_message
 from .emailer import send_report as send_email_report
-from .reporting import write_reports
+from .reporting import write_reports, append_github_step_summary
 from .market_hours import is_us_regular_session
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -167,6 +167,8 @@ def run():
     }
 
     reports = write_reports(summary, alerts, REPORT_DIR, MAX_EMAIL_ALERTS)
+    if append_github_step_summary(summary, alerts, reports):
+        log.info("Detailed summary also written to the GitHub Actions Summary tab.")
     log.info("=== SCAN SUMMARY ===")
     log.info("Watchlist requested: %s | scanned: %s | no data: %s | failed: %s",
              summary["requested_tickers"], summary["scanned_tickers"], summary["no_data_count"], summary["failed_count"])
