@@ -1,36 +1,54 @@
 # US Options Anomaly Monitor
 
-Hourly options-chain anomaly monitor with Telegram alerts.
+Hourly options-chain screening for U.S. equities and ETFs, with detailed Polish anomaly explanations, CSV/HTML/TXT reports, Gmail email summaries and optional Telegram notifications.
 
-## MVP scope
-- Python 3.11+
-- Yahoo Finance adapter for a configurable ticker watchlist (unofficial, best-effort; not full-market coverage)
-- Cboe adapter placeholder until an authorized feed/API is configured
-- SQLite history
-- Heuristic anomaly score (0-100): volume/OI, contract volume, premium turnover, IV movement, quote spread
-- Telegram notifications
-- GitHub Actions hourly scheduler
+## Watchlist
+- 107 underlyings: original 7 symbols plus 75 additional equities and 25 additional ETFs.
+- Complete list: universe.csv; configuration: config.yaml.
+- The configured list is a curated watchlist, not the complete U.S. options market. Yahoo Finance may not provide a chain for every symbol and does not guarantee complete, licensed real-time coverage.
+- Yahoo adapter scans up to 4 nearest expiration dates per underlying. Cboe integration is currently a placeholder requiring an authorized feed; no Cboe website scraping is performed.
 
-> **Coverage limitation:** This MVP does not scan every US-listed option. A genuine US-wide scan requires an authoritative full option symbol universe and appropriately licensed options data. Yahoo Finance/yfinance is not a guaranteed complete market feed. Cboe access may require commercial entitlement. Alerts are not investment advice or proof of opening flow.
+## Detailed anomaly explanations
+Every alert explains the contract, CALL/PUT right, expiry, strike, underlying price (if available), ITM/ATM/OTM estimate, days to expiry, session volume, previous Open Interest, Volume/OI calculation, estimated premium turnover, volume increase since the previous same-session snapshot, Implied Volatility change, bid/ask spread, points assigned to each factor, data-quality issues, and a plain-language interpretation.
 
-## Setup
-1. Install Python 3.11+.
-2. Install dependencies: `pip install -r requirements.txt`.
-3. Copy `.env.example` to `.env` and enter Telegram credentials, or keep dry-run enabled.
-4. Configure `WATCHLIST` or edit `config.yaml`.
-5. Run: `python -m src.main`.
+The anomaly score and data confidence are independent. For example, Volume/OI of 540x with OI=1 is mathematically correct but has low reliability because the denominator is tiny. The report highlights that case.
 
-## GitHub Actions secrets
-In **Settings → Secrets and variables → Actions → Repository secrets**, add `TELEGRAM_BOT_TOKEN` (the token issued by BotFather) and `TELEGRAM_CHAT_ID` (the destination chat ID). Use repository secrets, not Environment secrets, unless the workflow is explicitly assigned to that environment. If either secret is missing, the scanner will still run and write alert details to the Actions log, but it will not send Telegram messages. Enable Actions and run **Hourly Options Scan** manually. The schedule is hourly in a UTC window that covers the New York regular trading session across daylight-saving changes; exchange holidays and times outside 09:30-16:00 New York time are skipped.
+Current score is a heuristic threshold model, not a statistical deviation from a rolling 20/60-session baseline. CALL or PUT does not identify who initiated a trade. Volume/OI is not proof of opening positions. Open Interest is normally refreshed daily. Estimated premium is volume × last price × standard 100 multiplier, not verified notional value from each execution. Sweep/aggressor detection requires trade-level data and bid/ask classification.
 
-## Environment
-`WATCHLIST` (default SPY,QQQ,IWM,AAPL,MSFT,NVDA,TSLA), `MAX_EXPIRATIONS` (4), `MIN_VOLUME` (100), `ALERT_SCORE` (65), `DATABASE_PATH` (data/options.db), `DRY_RUN` (1).
+## Output per in-session run
+- Detailed explanations for the top 40 alerts in the Actions log.
+- CSV with all alerts from that scan.
+- HTML report with up to 30 expanded explanations.
+- Plain-text summary with up to 30 explanations.
+- GitHub Actions artifact named options-scan-reports-N, retained for 30 days.
+- One Gmail summary email to passalipo@gmail.com on every in-session scan, including zero-alert runs, if Gmail SMTP secrets are set. The email includes HTML content and CSV/HTML attachments.
+- Optional Telegram notifications for up to 20 top contracts, if Telegram secrets are set.
 
-## Interpretation and limitations
-- Open interest normally updates daily, not hourly.
-- Yahoo volume is generally cumulative within the trading session; comparisons are reset at the New York trading-day boundary.
-- Volume/OI is a screening metric, not evidence that trades opened new positions.
-- Sweep/aggressor detection requires trade-level prints and reliable bid/ask classification.
-- GitHub runners are ephemeral. SQLite Actions cache is best-effort, not durable transactional storage. Use managed PostgreSQL or a persistent host for production history.
+## Gmail setup
+In Settings → Secrets and variables → Actions → Repository secrets, add:
+- EMAIL_USERNAME = passalipo@gmail.com
+- EMAIL_APP_PASSWORD = Google App Password generated for this Gmail account
 
-For research/education only. Validate data quality, entitlements, and licensing before production use.
+Use a Google App Password, not the normal account password. Google App Passwords require 2-Step Verification and may be unavailable for some account configurations. Recipient is configured as passalipo@gmail.com; SMTP uses smtp.gmail.com port 587 with STARTTLS.
+
+Optional Telegram secrets:
+- TELEGRAM_BOT_TOKEN
+- TELEGRAM_CHAT_ID
+
+If email secrets are missing, the scan still runs and the reports are uploaded as a GitHub Actions artifact. If Telegram secrets are missing, Telegram messages are skipped.
+
+## Run and inspect
+1. Open the Actions tab.
+2. Run Hourly Options Scan manually, or let the weekday schedule execute.
+3. Open the scan job and inspect Run scanner for the human-readable explanations.
+4. Download options-scan-reports-N from the run's Artifacts section for CSV/HTML/TXT.
+
+The scanner checks actual New York regular-session hours and exchange holidays. The broad UTC cron window accounts for daylight-saving changes.
+
+## Local setup
+Python 3.11+; install requirements.txt, copy .env.example to .env, then run python -m src.main. Use DRY_RUN=1 for local testing.
+
+## Storage and data limitations
+SQLite is persisted using GitHub Actions cache, which is best-effort and not a durable transactional database. For production history, use managed PostgreSQL or a persistent host. Yahoo Finance/yfinance is unofficial, may be rate-limited or delayed, and does not constitute a complete U.S. options feed.
+
+Research and education only. An alert is not investment advice or a proof of opening institutional flow.
