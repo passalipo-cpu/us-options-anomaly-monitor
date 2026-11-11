@@ -2,7 +2,7 @@ name: Hourly Options Scan
 
 on:
   schedule:
-    # UTC window covers the New York 09:30-16:00 session across DST changes.
+    # Broad UTC window covers New York regular hours across DST changes.
     - cron: '45 13-21 * * 1-5'
   workflow_dispatch:
 
@@ -16,10 +16,12 @@ concurrency:
 jobs:
   scan:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - name: Checkout
+        uses: actions/checkout@v7
+      - name: Set up Python
+        uses: actions/setup-python@v7
         with:
           python-version: '3.11'
           cache: pip
@@ -27,25 +29,39 @@ jobs:
         run: pip install -r requirements.txt pytest
       - name: Run unit tests
         run: python -m pytest -q
-      - name: Ensure cache directory exists
-        run: mkdir -p data && touch data/options.db
+      - name: Ensure cache and report directories exist
+        run: mkdir -p data reports && touch data/options.db
       - name: Restore SQLite cache
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           path: data/options.db
           key: options-db-${{ runner.os }}-${{ github.run_id }}
           restore-keys: |
             options-db-${{ runner.os }}-
-      - name: Run scanner
+      - name: Run scanner, generate reports and send notifications
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          EMAIL_USERNAME: ${{ secrets.EMAIL_USERNAME }}
+          EMAIL_APP_PASSWORD: ${{ secrets.EMAIL_APP_PASSWORD }}
+          EMAIL_TO: passalipo@gmail.com
+          EMAIL_HOST: smtp.gmail.com
+          EMAIL_PORT: '587'
           DRY_RUN: '0'
           ALERT_SCORE: '65'
+          MAX_EXPIRATIONS: '4'
         run: python -m src.main
       - name: Save SQLite cache
         if: always()
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v5
         with:
           path: data/options.db
           key: options-db-${{ runner.os }}-${{ github.run_id }}
+      - name: Upload scan reports
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: options-scan-reports-${{ github.run_number }}
+          path: reports/
+          if-no-files-found: warn
+          retention-days: 30
