@@ -183,7 +183,9 @@ def run():
         log.warning("Telegram secrets missing: add TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID.")
     else:
         sent = 0
-        for item in alerts[:MAX_TELEGRAM_ALERTS]:
+        alert_db = connect(DATABASE_PATH)
+        try:
+          for item in alerts[:MAX_TELEGRAM_ALERTS]:
             d = item["data"]
             s = item["score_data"]
             msg = (
@@ -198,11 +200,12 @@ def run():
             )
             try:
                 send_message(TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, msg)
-                record_alert_sent(db=connect(DATABASE_PATH), symbol=d["contract_symbol"],
-                                  session_day=session_day, score=s["score"])
+                record_alert_sent(alert_db, d["contract_symbol"], session_day, s["score"])
                 sent += 1
             except Exception:
                 log.exception("Telegram send failed for %s", d["contract_symbol"])
+        finally:
+            alert_db.close()
         log.info("Telegram alerts sent: %s (limit %s).", sent, MAX_TELEGRAM_ALERTS)
 
     if email_configured:
