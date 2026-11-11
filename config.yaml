@@ -1,0 +1,11 @@
+watchlist:
+  - SPY
+  - QQQ
+  - IWM
+  - AAPL
+  - MSFT
+  - NVDA
+  - TSLA
+max_expirations: 4
+min_volume: 100
+alert_score: 65
