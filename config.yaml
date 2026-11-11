@@ -1,3 +1,6 @@
+# Curated liquid/high-activity U.S. option underlyings. This is not the complete U.S. options universe.
+# Base set: original 7 tickers + 75 additional equities + 25 additional ETFs = 107 underlyings.
+# Some symbols may occasionally have no Yahoo options chain; those are skipped and logged.
 watchlist:
   - SPY
   - QQQ
@@ -6,6 +9,110 @@ watchlist:
   - MSFT
   - NVDA
   - TSLA
+  - AMD
+  - AMZN
+  - GOOGL
+  - GOOG
+  - META
+  - INTC
+  - MU
+  - AVGO
+  - PLTR
+  - MSTR
+  - SOFI
+  - COIN
+  - NFLX
+  - ORCL
+  - UBER
+  - HOOD
+  - MARA
+  - SMCI
+  - IREN
+  - TTD
+  - SOUN
+  - RKLB
+  - PFE
+  - MCHP
+  - CRWV
+  - SNDK
+  - DKNG
+  - WBD
+  - IBM
+  - NOK
+  - CELH
+  - TSM
+  - ASTS
+  - MRVL
+  - BABA
+  - RIOT
+  - BAC
+  - OKLO
+  - IONQ
+  - NU
+  - CMCSA
+  - ADBE
+  - QCOM
+  - RIVN
+  - NKE
+  - GME
+  - VST
+  - DELL
+  - TEAM
+  - WDC
+  - HIMS
+  - F
+  - PATH
+  - NIO
+  - NVO
+  - WMT
+  - CLSK
+  - XOM
+  - CMG
+  - ABNB
+  - FCX
+  - CRWD
+  - GLW
+  - CVNA
+  - RDDT
+  - FSLR
+  - SHOP
+  - CRM
+  - SNAP
+  - JPM
+  - C
+  - DIS
+  - PYPL
+  - SQ
+  - WFC
+  - TLT
+  - SLV
+  - GLD
+  - TQQQ
+  - SQQQ
+  - SOXL
+  - EEM
+  - XLF
+  - HYG
+  - KRE
+  - ARKK
+  - GDX
+  - EWZ
+  - XLE
+  - FXI
+  - EFA
+  - VXX
+  - KWEB
+  - UNG
+  - DIA
+  - XBI
+  - BITO
+  - SMH
+  - USO
+  - XLU
 max_expirations: 4
 min_volume: 100
 alert_score: 65
+request_delay_seconds: 0.35
+max_detailed_log_alerts: 40
+max_email_alerts: 30
+max_telegram_alerts: 20
