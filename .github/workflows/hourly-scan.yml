@@ -2,8 +2,8 @@ name: Hourly Options Scan
 
 on:
   schedule:
-    # Broad UTC window; Python checks New York session and exchange holidays.
-    - cron: '15 13-21 * * 1-5'
+    # UTC window covers the New York 09:30-16:00 session across DST changes.
+    - cron: '45 13-21 * * 1-5'
   workflow_dispatch:
 
 permissions:
@@ -24,13 +24,18 @@ jobs:
           python-version: '3.11'
           cache: pip
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        run: pip install -r requirements.txt pytest
+      - name: Run unit tests
+        run: pytest -q
+      - name: Ensure cache directory exists
+        run: mkdir -p data && touch data/options.db
       - name: Restore SQLite cache
         uses: actions/cache/restore@v4
         with:
           path: data/options.db
           key: options-db-${{ runner.os }}-${{ github.run_id }}
-          restore-keys: options-db-${{ runner.os }}-
+          restore-keys: |
+            options-db-${{ runner.os }}-
       - name: Run scanner
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
