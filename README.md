@@ -29,7 +29,7 @@ In Settings → Secrets and variables → Actions → Repository secrets, add:
 - EMAIL_USERNAME = email@gmail.com
 - EMAIL_APP_PASSWORD = Google App Password generated for this Gmail account
 
-Use a Google App Password, not the normal account password. Google App Passwords require 2-Step Verification and may be unavailable for some account configurations. Recipient is configured as passalipo@gmail.com; SMTP uses smtp.gmail.com port 587 with STARTTLS.
+Use a Google App Password, not the normal account password. Google App Passwords require 2-Step Verification and may be unavailable for some account configurations. Recipient is configured as email@gmail.com; SMTP uses smtp.gmail.com port 587 with STARTTLS.
 
 Optional Telegram secrets:
 - TELEGRAM_BOT_TOKEN
