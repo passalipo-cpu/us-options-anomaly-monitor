@@ -21,12 +21,12 @@ Current score is a heuristic threshold model, not a statistical deviation from a
 - HTML report with up to 30 expanded explanations.
 - Plain-text summary with up to 30 explanations.
 - GitHub Actions artifact named options-scan-reports-N, retained for 30 days.
-- One Gmail summary email to passalipo@gmail.com on every in-session scan, including zero-alert runs, if Gmail SMTP secrets are set. The email includes HTML content and CSV/HTML attachments.
+- One Gmail summary email to email@gmail.com on every in-session scan, including zero-alert runs, if Gmail SMTP secrets are set. The email includes HTML content and CSV/HTML attachments.
 - Optional Telegram notifications for up to 20 top contracts, if Telegram secrets are set.
 
 ## Gmail setup
 In Settings → Secrets and variables → Actions → Repository secrets, add:
-- EMAIL_USERNAME = passalipo@gmail.com
+- EMAIL_USERNAME = email@gmail.com
 - EMAIL_APP_PASSWORD = Google App Password generated for this Gmail account
 
 Use a Google App Password, not the normal account password. Google App Passwords require 2-Step Verification and may be unavailable for some account configurations. Recipient is configured as passalipo@gmail.com; SMTP uses smtp.gmail.com port 587 with STARTTLS.
